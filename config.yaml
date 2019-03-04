@@ -1,0 +1,15 @@
+epochs: 8
+fine_tuning_epochs: 2
+batch_size: 1536
+learning_rate: 0.001
+learning_rate_max_offset: 0.002
+threshold: 0.33
+max_vocab_size: 120000
+n_repeat: 1
+n_folds: 10
+share: True
+embed_size: 300
+dropout: 0.1
+random_seed: 233
+max_seq_len: 70
+debug: false

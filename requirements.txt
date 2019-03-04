@@ -1,0 +1,6 @@
+sacred
+pymongo
+pytorch == 1.0.0
+numpy == 1.14.2
+tqdm == 4.28.1
+scikit-learn == 0.19.0
