@@ -9,11 +9,10 @@ import numpy as np
 import os
 
 expr = sacred.Experiment('insincere')
-
 mongo_url = r'mongodb://user:password@mongoserver.com:port'
 mongo_db = 'expr_insincere'
 ob = sacred.observers.MongoObserver.create(url=mongo_url, db_name=mongo_db)
-expr.observers.append(ob)  # comment this if no mongodb is available
+expr.observers.append(ob)
 expr.add_config('config.yaml')
 
 
@@ -26,38 +25,29 @@ def expr_func(random_seed, epochs, fine_tuning_epochs, batch_size, dropout, lear
     # TODO try 5*2 fold
     print_every_step = 500
     train_df, _ = load_data(debug=debug)
-    train_df, test_df = train_test_split(train_df, test_size=356000)
+    train_df, test_df = train_test_split(train_df, test_size=0.02)
     targets_te = test_df['target']
     scores_te = []
     scores_va = []
     for n in range(n_repeat):
         if n_folds > 1:
-            predictions_te_h, predictions_te, scores, thresholds, coeffs = cv(train_df, test_df, n_folds=n_folds,
-                                                                              epochs=epochs,
-                                                                              batch_size=batch_size,
-                                                                              learning_rate=learning_rate,
-                                                                              threshold=threshold,
-                                                                              max_vocab_size=max_vocab_size,
-                                                                              embed_size=embed_size,
-                                                                              print_every_step=print_every_step,
-                                                                              share=share, dropout=dropout,
-                                                                              learning_rate_max_offset=learning_rate_max_offset,
-                                                                              fine_tuning_epochs=fine_tuning_epochs,
-                                                                              max_seq_len=max_seq_len)
+            predictions_te, scores, thresholds,coeffs = cv(train_df, test_df, n_folds=n_folds, epochs=epochs,
+                                                    batch_size=batch_size,
+                                                    learning_rate=learning_rate, threshold=threshold,
+                                                    max_vocab_size=max_vocab_size, embed_size=embed_size,
+                                                    print_every_step=print_every_step, share=share, dropout=dropout,
+                                                    learning_rate_max_offset=learning_rate_max_offset,
+                                                    fine_tuning_epochs=fine_tuning_epochs, max_seq_len=max_seq_len)
             print(coeffs)
             threshold_e = np.array(thresholds).mean()
             best_score = -1
+            best_threshold = None
             for t in np.arange(0, 1, 0.01):
                 score = f1_score(targets_te, predictions_te > t)
                 if score > best_score:
                     best_score = score
                     best_threshold = t
-                    print('best threshold on test set: {:.2f} score {:.4f}'.format(best_threshold, best_score))
-            print('estimated {:.4f} 1 of hard {:.4f} 0.31 hard {:.4f}'.format(
-                f1_score(targets_te, predictions_te > threshold_e),
-                f1_score(targets_te, predictions_te_h > 1),
-                f1_score(targets_te, predictions_te > 0.31)))
-
+            print('best threshold on test set: {:.2f} score {:.4f}'.format(best_threshold, best_score))
             scores_te.append(
                 [f1_score(targets_te, predictions_te > threshold_e), roc_auc_score(targets_te, predictions_te),
                  precision_score(targets_te, predictions_te > threshold_e),
